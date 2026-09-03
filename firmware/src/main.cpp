@@ -178,6 +178,7 @@ unsigned long lastNTPCheck = 0;
 
 unsigned long lastOLED = 0;
 unsigned long lastHeartbeat = 0;
+unsigned long heartbeatRetryAfter = 0;
 
 void sendHeartbeat();
 
@@ -2949,11 +2950,6 @@ void loop() {
     server.handleClient();
     serviceBuzzer();
 
-    if (millis() - lastHeartbeat >= HEARTBEAT_INTERVAL) {
-        lastHeartbeat = millis();
-        sendHeartbeat();
-    }
-
     yield();
 
 
@@ -2978,6 +2974,11 @@ void loop() {
     // Fingerprint
     scanFingerprint();
 
+    if (millis() - lastHeartbeat >= HEARTBEAT_INTERVAL) {
+        lastHeartbeat = millis();
+        sendHeartbeat();
+    }
+
 
     yield();
 }
@@ -2987,17 +2988,28 @@ void sendHeartbeat() {
         return;
     }
 
+    if (millis() < heartbeatRetryAfter || ESP.getFreeHeap() < 28000) {
+        return;
+    }
+
+    if (ESP.getFreeHeap() < 18000) {
+        Serial.print("HEARTBEAT SKIPPED, FREE HEAP: ");
+        Serial.println(ESP.getFreeHeap());
+        return;
+    }
+
     HTTPClient http;
     String url = String(API_BASE_URL) + "/api/device/heartbeat";
     heartbeatClient.setInsecure();
-    heartbeatClient.setBufferSizes(1024, 1024);
+    heartbeatClient.setBufferSizes(512, 512);
     if (!http.begin(heartbeatClient, url)) {
         Serial.println("BACKEND HTTP INIT ERROR");
+        heartbeatRetryAfter = millis() + 600000UL;
         return;
     }
     http.useHTTP10(true);
     http.setReuse(false);
-    http.setTimeout(60000);
+    http.setTimeout(20000);
     http.addHeader("Content-Type", "application/json");
     http.addHeader("Authorization", String("Bearer ") + DEVICE_API_KEY);
     http.addHeader("X-Device-Code", DEVICE_CODE_VALUE);
@@ -3009,6 +3021,7 @@ void sendHeartbeat() {
     Serial.println(status);
     if (status < 0) {
         Serial.println(http.errorToString(status));
+        heartbeatRetryAfter = millis() + 600000UL;
     }
     http.end();
     heartbeatClient.stop();

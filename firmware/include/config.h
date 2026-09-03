@@ -71,7 +71,7 @@
 // TIMERS
 // ============================================
 
-#define HEARTBEAT_INTERVAL 10000UL
+#define HEARTBEAT_INTERVAL 300000UL
 #define QUEUE_RETRY_INTERVAL 15000UL
 #define WIFI_RETRY_INTERVAL 10000UL
 
