@@ -3,6 +3,9 @@
 #include <SoftwareSerial.h>
 #include <EEPROM.h>
 #include <time.h>
+#include <ESP8266HTTPClient.h>
+#include <WiFiClientSecureBearSSL.h>
+#include "config.h"
 
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
@@ -22,8 +25,8 @@
 // WIFI
 // =====================================================
 
-const char* WIFI_SSID = "Ilmhub/Uychi";
-const char* WIFI_PASS = "IlmHub2025";
+const char* WIFI_SSID_VALUE = WIFI_SSID;
+const char* WIFI_PASS = WIFI_PASSWORD;
 
 const char* AP_SSID = "ILMHUB_DAVOMAT";
 const char* AP_PASS = "ILMHUB_SETUP_PASSWORD";
@@ -37,7 +40,7 @@ bool routerConnected = false;
 // DEVICE
 // =====================================================
 
-const char* DEVICE_CODE = "ILMHUB-UYCHI-01";
+const char* DEVICE_CODE_VALUE = DEVICE_CODE;
 
 
 // =====================================================
@@ -174,6 +177,9 @@ unsigned long lastScan = 0;
 unsigned long lastNTPCheck = 0;
 
 unsigned long lastOLED = 0;
+unsigned long lastHeartbeat = 0;
+
+void sendHeartbeat();
 
 enum BuzzerPattern {
     BUZZER_IDLE,
@@ -1350,7 +1356,7 @@ String webPage() {
 
         "<p><b>Device:</b> ";
 
-    h += DEVICE_CODE;
+    h += DEVICE_CODE_VALUE;
 
     h +=
         "</p>"
@@ -2472,7 +2478,7 @@ void connectWiFi() {
     );
 
     WiFi.begin(
-        WIFI_SSID,
+        WIFI_SSID_VALUE,
         WIFI_PASS
     );
 
@@ -2901,7 +2907,7 @@ void setup() {
     );
 
     Serial.println(
-        DEVICE_CODE
+        DEVICE_CODE_VALUE
     );
 
 
@@ -2941,6 +2947,11 @@ void loop() {
     server.handleClient();
     serviceBuzzer();
 
+    if (millis() - lastHeartbeat >= HEARTBEAT_INTERVAL) {
+        lastHeartbeat = millis();
+        sendHeartbeat();
+    }
+
     yield();
 
 
@@ -2967,4 +2978,29 @@ void loop() {
 
 
     yield();
+}
+
+void sendHeartbeat() {
+    if (!routerConnected || WiFi.status() != WL_CONNECTED) {
+        return;
+    }
+
+    BearSSL::WiFiClientSecure client;
+    client.setInsecure();
+    HTTPClient http;
+    String url = String(API_BASE_URL) + "/api/device/heartbeat";
+    if (!http.begin(client, url)) {
+        Serial.println("BACKEND HTTP INIT ERROR");
+        return;
+    }
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("Authorization", String("Bearer ") + DEVICE_API_KEY);
+    http.addHeader("X-Device-Code", DEVICE_CODE_VALUE);
+    String body = String("{\"deviceCode\":\"") + DEVICE_CODE_VALUE +
+                  "\",\"ipAddress\":\"" + WiFi.localIP().toString() +
+                  "\",\"firmwareVersion\":\"1.0.0\"}";
+    int status = http.POST(body);
+    Serial.print("HEARTBEAT HTTP: ");
+    Serial.println(status);
+    http.end();
 }

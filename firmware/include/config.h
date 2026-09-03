@@ -7,6 +7,10 @@
 // Device
 #define DEVICE_CODE "ILMHUB-UYCHI-01"
 
+#if __has_include("secrets.h")
+#include "secrets.h"
+#endif
+
 // ============================================
 // WiFi
 // ============================================
@@ -15,15 +19,24 @@
 // Bu qiymatlar faqat kerak bo'lsa fallback sifatida.
 // Asosiy WiFi konfiguratsiyasi WiFiManager orqali saqlanadi.
 
-#define WIFI_SSID "Ilmhub/Uychi"
-#define WIFI_PASSWORD "IlmHub2025"
+#ifndef WIFI_SSID
+#define WIFI_SSID "YOUR_WIFI_SSID"
+#endif
+#ifndef WIFI_PASSWORD
+#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
+#endif
 
 // ============================================
 // BACKEND SERVER
 // ============================================
 
 // Kompyuteringizning LAN IP manzili
-#define API_BASE_URL "https://YOUR-RENDER-BACKEND.onrender.com"
+#ifndef API_BASE_URL
+#define API_BASE_URL "https://ilmhubdavomat.onrender.com"
+#endif
+#ifndef DEVICE_API_KEY
+#define DEVICE_API_KEY "YOUR_DEVICE_API_KEY"
+#endif
 
 // ============================================
 // R503
