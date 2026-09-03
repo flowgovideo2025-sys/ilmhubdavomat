@@ -17,10 +17,11 @@ export default function Home() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch("/api/dashboard")
+    const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+    fetch(`${apiUrl}/api/dashboard`)
       .then((response) => {
         if (!response.ok) throw new Error("Dashboard API unavailable");
-        return response.json();
+        return response.json().then((payload) => payload.data ?? payload);
       })
       .then(setDashboard)
       .catch(() => setError("Connect the database to load live statistics."));

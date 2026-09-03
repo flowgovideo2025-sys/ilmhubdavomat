@@ -12,6 +12,8 @@ Production web/API foundation for ILMHUB attendance devices. The web app uses Ne
 
 The dashboard does not invent records. It shows an unavailable state until the database is configured. Device requests use `Authorization: Bearer <device-token>` and `X-Device-Code` headers. Store only the SHA-256 digest of each provisioned device token in `Device.apiKeyHash`.
 
+For Vercel, set `NEXT_PUBLIC_API_URL` to the deployed Render URL, for example `https://ilmhubdavomat.onrender.com`. The frontend calls Render directly for dashboard statistics; the Render service root and `/health` endpoints are public diagnostics.
+
 ## Device API
 
 - `POST /api/devices/heartbeat`
