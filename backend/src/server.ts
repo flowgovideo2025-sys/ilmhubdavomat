@@ -10,7 +10,20 @@ import { z } from "zod";
 const db = new PrismaClient();
 const app = express();
 app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL?.split(",") ?? false, credentials: true }));
+const allowedOrigins = (process.env.FRONTEND_URL ?? "http://localhost:3000")
+	.split(",")
+	.map((origin) => origin.trim())
+	.filter(Boolean);
+app.use(cors({
+	origin: (origin, callback) => {
+		if (!origin || allowedOrigins.includes(origin) || /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
+			callback(null, true);
+			return;
+		}
+		callback(new Error("Origin not allowed"));
+	},
+	credentials: true,
+}));
 app.use(express.json({ limit: "32kb" }));
 app.use(rateLimit({ windowMs: 60_000, limit: 120 }));
 const ok = (res: Response, data: unknown, status = 200) => res.status(status).json({ success: true, data });
