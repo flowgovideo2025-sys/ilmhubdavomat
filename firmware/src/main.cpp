@@ -137,7 +137,7 @@ Student students[128];
 // ATTENDANCE
 // =====================================================
 
-#define MAX_ATTENDANCE 100
+#define MAX_ATTENDANCE 20
 
 struct Attendance {
 
