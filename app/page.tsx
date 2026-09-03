@@ -17,7 +17,7 @@ export default function Home() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "").replace(/\/$/, "");
+    const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "https://ilmhubdavomat.onrender.com").replace(/\/$/, "");
     fetch(`${apiUrl}/api/dashboard`)
       .then((response) => {
         if (!response.ok) throw new Error("Dashboard API unavailable");
