@@ -20,14 +20,17 @@ export default function Home() {
 
   useEffect(() => {
     const apiUrl = (process.env.NEXT_PUBLIC_API_URL ?? "https://ilmhubdavomat.onrender.com").replace(/\/$/, "");
-    Promise.all([fetch(`${apiUrl}/api/dashboard`), fetch(`${apiUrl}/api/device/status`)]).then(async ([dashboardResponse, deviceResponse]) => {
+    const loadData = () => Promise.all([fetch(`${apiUrl}/api/dashboard`), fetch(`${apiUrl}/api/device/status`)]).then(async ([dashboardResponse, deviceResponse]) => {
         if (!dashboardResponse.ok || !deviceResponse.ok) throw new Error("Dashboard API unavailable");
         const dashboardPayload = await dashboardResponse.json();
         const devicePayload = await deviceResponse.json();
         setDashboard(dashboardPayload.data ?? dashboardPayload);
         setDevice((devicePayload.data ?? devicePayload)[0] ?? null);
-      })
+      });
+    loadData()
       .catch(() => setError("Connect the database to load live statistics."));
+    const timer = window.setInterval(() => loadData().catch(() => setError("Server bilan aloqa mavjud emas.")), 5000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const cards = [
