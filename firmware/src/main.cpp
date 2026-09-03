@@ -2987,12 +2987,14 @@ void sendHeartbeat() {
 
     BearSSL::WiFiClientSecure client;
     client.setInsecure();
+    client.setBufferSizes(512, 512);
     HTTPClient http;
     String url = String(API_BASE_URL) + "/api/device/heartbeat";
     if (!http.begin(client, url)) {
         Serial.println("BACKEND HTTP INIT ERROR");
         return;
     }
+    http.setTimeout(8000);
     http.addHeader("Content-Type", "application/json");
     http.addHeader("Authorization", String("Bearer ") + DEVICE_API_KEY);
     http.addHeader("X-Device-Code", DEVICE_CODE_VALUE);
