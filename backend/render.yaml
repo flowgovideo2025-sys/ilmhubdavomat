@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ilmhub-attendance-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm ci && npx prisma generate && npm run build
+    startCommand: npx prisma migrate deploy && npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: DEVICE_API_KEY_HASH
+        sync: false
+      - key: TZ
+        value: Asia/Tashkent

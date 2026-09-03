@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+
+enum AttendanceType {
+  ARRIVAL
+  DEPARTURE
+  UNKNOWN
+}
+
+enum CommandType {
+  ENROLL
+  DELETE_FINGERPRINT
+  CLEAR_ALL
+  SYNC
+  STATUS
+}
+
+enum CommandStatus {
+  PENDING
+  PROCESSING
+  SUCCESS
+  FAILED
+}
+
+model Student {
+  id            String       @id @default(cuid())
+  firstName     String
+  lastName      String
+  groupName     String
+  fingerprintId Int?         @unique
+  deviceId      String?
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  device        Device?      @relation(fields: [deviceId], references: [id])
+  attendances   Attendance[]
+  fingerprint   Fingerprint?
+}
+
+model Device {
+  id              String          @id @default(cuid())
+  deviceCode      String          @unique
+  name            String
+  apiKeyHash      String
+  ipAddress       String?
+  firmwareVersion String?
+  lastSeen        DateTime?
+  isOnline        Boolean         @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  students        Student[]
+  attendances     Attendance[]
+  fingerprints    Fingerprint[]
+  commands        DeviceCommand[]
+  unknownScans    UnknownScan[]
+}
+
+model Fingerprint {
+  id        String   @id @default(cuid())
+  studentId String   @unique
+  deviceId  String
+  sensorSlot Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  student   Student  @relation(fields: [studentId], references: [id])
+  device    Device   @relation(fields: [deviceId], references: [id])
+  @@unique([deviceId, sensorSlot])
+}
+
+model Attendance {
+  id            String         @id @default(cuid())
+  eventId       String         @unique
+  studentId     String?
+  deviceId      String
+  type          AttendanceType
+  timestamp     DateTime       @default(now())
+  confidence    Int            @default(0)
+  student       Student?       @relation(fields: [studentId], references: [id])
+  device        Device         @relation(fields: [deviceId], references: [id])
+  @@index([timestamp])
+}
+
+model UnknownScan {
+  id         String   @id @default(cuid())
+  deviceId   String
+  confidence Int      @default(0)
+  timestamp  DateTime @default(now())
+  device     Device   @relation(fields: [deviceId], references: [id])
+}
+
+model DeviceCommand {
+  id          String        @id @default(cuid())
+  deviceId    String
+  type        CommandType
+  payload     Json
+  status      CommandStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  processedAt DateTime?
+  result      Json?
+  device      Device        @relation(fields: [deviceId], references: [id])
+  @@index([deviceId, status, createdAt])
+}
