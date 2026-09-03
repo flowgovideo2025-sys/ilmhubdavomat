@@ -181,6 +181,8 @@ unsigned long lastHeartbeat = 0;
 
 void sendHeartbeat();
 
+BearSSL::WiFiClientSecure heartbeatClient;
+
 enum BuzzerPattern {
     BUZZER_IDLE,
     BUZZER_SUCCESS_FIRST,
@@ -2985,16 +2987,17 @@ void sendHeartbeat() {
         return;
     }
 
-    BearSSL::WiFiClientSecure client;
-    client.setInsecure();
-    client.setBufferSizes(512, 512);
     HTTPClient http;
     String url = String(API_BASE_URL) + "/api/device/heartbeat";
-    if (!http.begin(client, url)) {
+    heartbeatClient.setInsecure();
+    heartbeatClient.setBufferSizes(1024, 1024);
+    if (!http.begin(heartbeatClient, url)) {
         Serial.println("BACKEND HTTP INIT ERROR");
         return;
     }
-    http.setTimeout(8000);
+    http.useHTTP10(true);
+    http.setReuse(false);
+    http.setTimeout(60000);
     http.addHeader("Content-Type", "application/json");
     http.addHeader("Authorization", String("Bearer ") + DEVICE_API_KEY);
     http.addHeader("X-Device-Code", DEVICE_CODE_VALUE);
@@ -3004,5 +3007,9 @@ void sendHeartbeat() {
     int status = http.POST(body);
     Serial.print("HEARTBEAT HTTP: ");
     Serial.println(status);
+    if (status < 0) {
+        Serial.println(http.errorToString(status));
+    }
     http.end();
+    heartbeatClient.stop();
 }
